@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Styling -->
+    <link rel="stylesheet" href="node_modules/bootstrap/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="node_modules/bootstrap/dist/css/bootstrap-grid.min.css">
+    <link rel="stylesheet" href="node_modules/bootstrap/dist/css/bootstrap-reboot.min.css">
+
+    <title>Budgeteer</title>
+
+    <style>
+        .breathing-room{
+            margin-top: 10px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<!-- Page rendering -->
+<body>
+    <!-- Seen page -->
+
+    <!-- Top Navbar -->
+    <nav class="navbar navbar-dark bg-dark navbar-static-top">
+        <div class="container">
+            <div class="navbar-header">
+                <span class="navbar-brand">
+                    <img src="assets/icons/png/icon.png" width="30" height="30" class="d-inline-block align-top" alt="">
+                    Budgeteer
+                </span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- List of Items -->
+    <div class="container" id="budgetView"></div>
+
+    <!-- Making the page work -->
+    <script>
+        // Required pieces
+        const electron = require('electron');
+        const {ipcRenderer} = electron;
+
+        const Store = require('electron-store');
+        const store = new Store();
+
+        // Variables
+        let currentWindow = electron.remote.getCurrentWindow();
+        let initialList = currentWindow.initialList;
+
+        // Make sure we have items to show: show error if not
+        if (Object.keys(initialList).length === 0 && initialList.constructor === Object)
+        {
+            showNoItemsError();
+        }
+        // But sense we do have items, parse them out
+        else
+        {
+            console.log(initialList);
+
+            // Remove the empty list error
+            removeNoItemsError();
+
+            // Set the initial list
+            for(var i in initialList)
+            {
+                // Determine which ul to add to
+                var correctUL = determineCorrectUl(initialList[i].category);
+
+                // Add the item to that ul
+                addItemToList(initialList[i], correctUL);
+            }
+        }
+
+        // Listen for items being added to our list
+        ipcRenderer.on('item:add', function(event, item){
+            // Remove the empty list error
+            removeNoItemsError();
+
+            // Determine which ul to add to
+            var correctUL = determineCorrectUl(item.category);
+
+            addItemToList(item, correctUL);
+        });
+
+        // Listen for a request to remove all items from list
+        // TODO: Is this still a thing?
+        ipcRenderer.on('item:clear', function(){
+            var mainDiv = document.getElementById('budgetView');
+            mainDiv.innerHTML = '';
+
+            store.clear();
+            
+            showNoItemsError();
+        });
+
+        /**
+         * Act on a Remove Item event
+         * TODO: Make sure this removes categories that are now empty
+         * @param event
+         */
+        function removeItem(itemId)
+        {
+            // Grab the item
+            var item = document.getElementById(itemId);
+
+            // Remove from storage
+            ipcRenderer.send('item:remove', itemId);
+
+            // Remove from view
+            item.remove();
+
+            // Show the empty list error if we have gotten that far
+            var mainDiv = document.getElementById('budgetView');
+            if (mainDiv.children.length == 0)
+            {
+                ul.className = '';
+                showNoItemsError();
+            }
+        }
+
+        /**
+         * Act on an Add Item event
+         * @param item
+         * @param correctUl
+         */
+        function addItemToList(thing, correctUl)
+        {
+            // Create a new li element
+            var li = document.createElement('li');
+
+            // Style it
+            li.className = 'list-group-item';
+            li.id = thing.id;
+
+            // Create our grid view
+            var container = document.createElement('div');
+            container.className = 'container';
+
+            var row = document.createElement('div');
+            row.className = 'row';
+
+            // Grab the pieces
+            var name = document.createElement('div');
+            name.innerHTML = thing.lineItem.name;
+
+            var amount = document.createElement('div');
+            amount.innerHTML = thing.lineItem.amount;
+
+            var date = document.createElement('div');
+            date.innerHTML = thing.lineItem.date;
+
+            var recurring = document.createElement('div');
+            recurring.innerHTML = thing.lineItem.recurring;
+
+            var remove = document.createElement('div');
+            remove.innerHTML = "<button class='btn btn-sm btn-outline-danger' onclick='removeItem(\"" + thing.id + "\")'>Delete</button>";
+
+            name.className = "col-sm";
+            amount.className = "col-sm";
+            date.className = "col-sm";
+            recurring.className = "col-sm";
+            remove.className = "col-sm";
+
+            // Build out the rows
+            row.appendChild(name);
+            row.appendChild(amount);
+            row.appendChild(date);
+            row.appendChild(recurring);
+            row.appendChild(remove);
+
+            // Build everything into the li
+            container.appendChild(row);
+            li.appendChild(container);
+
+            // Append the new li to the ul element
+            correctUl.appendChild(li);
+
+            // Append this entire beast to the overall div
+            var mainDiv = document.getElementById('budgetView');
+
+            // Make sure Income comes first
+            if (thing.category === "Income")
+            {
+                mainDiv.insertBefore(correctUl, mainDiv.firstChild);
+            }
+            else
+            {
+                mainDiv.appendChild(correctUl);
+            }
+        }
+
+        /**
+         * Display a no items error
+         */
+        function showNoItemsError()
+        {
+            // create the ul
+            var ul = document.createElement('ul');
+
+            // Set styles accordingly
+            ul.className = 'list-group breathing-room';
+
+            // Give it an id
+            ul.id = 'nothingToShow';
+
+            // Create and fill a new li element
+            var li = document.createElement('li');
+            li.innerHTML = 'Create your first budget item <a href="#" onclick="openAddNewItemWindow()">here</a>!';
+            li.id = 'nothingFoundMessage';
+
+            // Style it accordingly
+            li.className = 'list-group-item list-group-item-warning';
+
+            // Append it to our ul element
+            ul.appendChild(li);
+
+            // Append this entire beast to the overall div
+            var mainDiv = document.getElementById('budgetView');
+            mainDiv.appendChild(ul);
+        }
+
+        /**
+         * Clear the no items error
+         */
+        function removeNoItemsError()
+        {
+            // Get the correct ul
+            var ul = document.getElementById("nothingToShow");
+
+            // If found, remove it
+            if (ul !== null)
+            {
+                // Remove the styling
+                ul.className = '';
+
+                // Remove any HTML in the ul element
+                var list = document.getElementById('nothingFoundMessage');
+
+                if (list !== null)
+                {
+                    ul.removeChild(list);
+                }
+            }
+        }
+
+        /**
+         * Determine the correct UL component
+         */
+        function determineCorrectUl(category)
+        {
+            // Search for the element
+            var correctUl = document.getElementById(category);
+
+            if (correctUl === null)
+            {
+                var correctUl = document.createElement('ul');
+                correctUl.id = category;
+                correctUl.className = "list-group breathing-room";
+
+                var headerLi = document.createElement('li');
+                headerLi.innerHTML = category;
+
+                // determine class color
+                switch (category)
+                {
+                    case "Income":
+                        headerLi.className = 'list-group-item list-group-item-success';
+                        break;
+                    default:
+                        headerLi.className = 'list-group-item list-group-item-primary';
+                }
+
+                correctUl.appendChild(headerLi);
+            }
+
+            // return our found one instead
+            return correctUl;
+        }
+
+        /**
+         * Send an event on button click for opening new item window
+         */
+        function openAddNewItemWindow()
+        {
+            ipcRenderer.send("window:addNewItem");
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Styles -->
+    <link rel="stylesheet" href="node_modules/bootstrap/dist/css/bootstrap.min.css">
+
+    <title>Add Budget Line Item</title>
+
+    <style>
+        .breathing-room{
+            margin-top: 10px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+
+<!-- Actual page rendering -->
+<body>
+    <div class="container-fluid">
+        <form>
+            <!-- Name field -->
+            <div class="form-group">
+                <label class="col-form-label" for="category">Category</label>
+                <input type="text" class="form-control" id="category" autofocus>
+            </div>
+
+            <div class="form-group">
+                <label class="col-form-label" for="name">Name</label>
+                <input type="text" class="form-control" id="name">
+            </div>
+
+            <div class="form-group">
+                <label class="col-form-label" for="amount">Amount</label>
+                <div class="input-group">
+                    <div class="input-group-addon">$</div>
+                    <input type="text" class="form-control" id="amount" placeholder="100.00">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="col-form-label" for="date">Date</label>
+                <input type="text" class="form-control" id="date">
+            </div>
+
+            <div class="form-group">
+                <label class="col-form-label" for="recurring">Recurring</label>
+                <select id="recurring" class="form-control">
+                    <option selected>Weekly</option>
+                    <option>Monthly</option>
+                </select>
+            </div>
+
+            <!-- Submit button -->
+            <button class="btn btn-success breathing-room" type="submit">Add Item</button>
+        </form>
+    </div>
+
+<!-- Script to make the page work -->
+<script>
+    // Bring in all needed pieces
+    const electron = require('electron');
+    const {ipcRenderer} = electron;
+
+    // Listen for form submit
+    const form = document.querySelector('form');
+    form.addEventListener('submit', submitForm);
+
+    /**
+     * What to do when submitting the form
+     * @param event
+     */
+    function submitForm(event){
+        // Prevent trying to POST from form
+        event.preventDefault();
+
+        // Instead, select the item (text)
+        var item = {};
+        item.category = document.querySelector('#category').value;
+
+        var lineItem = {};
+        lineItem.name = document.querySelector('#name').value;
+        lineItem.amount = document.querySelector('#amount').value;
+        lineItem.date = document.querySelector('#date').value;
+        lineItem.recurring = document.querySelector('#recurring').value;
+
+        item.lineItem = lineItem;
+
+        // Send the item
+        ipcRenderer.send('item:add', item);
+    }
+</script>
+
+<!-- End of page -->
+</body>
+</html>
