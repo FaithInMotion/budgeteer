@@ -12,6 +12,12 @@ const Store = require('electron-store');
 const store = new Store();
 
 /**
+ * Model setup
+ */
+const Category = require('./models/category');
+const category = new Category();
+
+/**
  * Electron setup
  */
 const {app, BrowserWindow, Menu, ipcMain} = electron;
@@ -22,109 +28,10 @@ process.env.NODE_ENV = 'development';
 
 //=== Windows we will use ===
 let mainWindow;
-let addWindow;
 
-/**
- * Prepare for when the app is ready
- */
-app.on('ready', function ()
-{
-    // First, grab all budget items that have already been created
-    let listItems = store.store;
-
-    // Create a new Main window
-    mainWindow = new BrowserWindow({
-        width: 800,
-        height: 600,
-    });
-
-    // Load the HTML for that window
-    mainWindow.loadURL(url.format({
-        pathname: path.join(__dirname, 'mainWindow.html'),
-        protocol: "file:",
-        slashes: true
-    }));
-
-    // Send our data along to the view
-    mainWindow.initialList = listItems;
-
-    // Quit app when closed
-    mainWindow.on('closed', function(){
-        app.quit();
-    });
-
-    // Build the menu from the template
-    const mainMenu = Menu.buildFromTemplate(mainMenuTemplate);
-
-    // Insert the menu
-    Menu.setApplicationMenu(mainMenu);
-});
-
-/**
- * Build out the new Add Item window
- */
-function createAddWindow()
-{
-    // Create new window
-    addWindow = new BrowserWindow({
-        width: 400,
-        height: 600,
-        title: 'Add Line Item'
-    });
-
-    // Load html file into the window
-    addWindow.loadURL(url.format({
-        pathname: path.join(__dirname, 'addWindow.html'),
-        protocol: "file:",
-        slashes: true
-    }));
-
-    // Handle garbage collection
-    addWindow.on('close', function(){
-        addWindow = null;
-    })
-}
-
-/**
- * Listen for when an item is added to our list
- */
-ipcMain.on('item:add', function(event, item)
-{
-    var newId = uuidv4();
-    item.id = newId;
-    console.log(item);
-
-    // Store it before you send it on
-    store.set(newId, item);
-
-    // okay now you can send it
-    mainWindow.webContents.send('item:add', item);
-    addWindow.close();
-});
-
-/**
- * Listen for when an item is removed from our list
- */
-ipcMain.on('item:remove', function(event, item)
-{
-    // Remove from storage
-    store.delete(item);
-});
-
-ipcMain.on('item:clear', function()
-{
-    // Remove from storage
-    store.clear();
-});
-
-function clearAllItems()
-{
-    store.clear();
-}
-
-ipcMain.on("window:addNewItem", function(){
-    createAddWindow();
-})
+//=== Main variables shared between pages ===
+let categories;
+let lineItems;
 
 /**
  * Create the Menu template
@@ -148,7 +55,12 @@ const mainMenuTemplate = [
                 }
             },
             {
-                // TODO: I think this can be removed when we allow the App name back
+                label: 'Reset Categories',
+                click(){
+                    category.resetToDefault();
+                }
+            },
+            {
                 label: 'Quit',
                 accelerator: process.platform == 'darwin'  ? 'Command+Q' : 'Ctr+Q',
                 click(){
@@ -160,12 +72,98 @@ const mainMenuTemplate = [
 ];
 
 /**
- * Hide the Electron name on the window
+ * Prepare for when the app is ready
  */
-if (process.platform == 'darwin'){
-    // TODO: Try to find a way to replace the apps name intead of it saying electron
-    mainMenuTemplate.unshift({}); // pushes empty object to front of menu
+app.on('ready', function ()
+{
+    // Create a new Main window
+    mainWindow = new BrowserWindow({
+        frame: false,
+        width: 800,
+        height: 600,
+    });
+
+    createMainWindow();
+
+    // Build the menu from the template
+    let mainMenu = Menu.buildFromTemplate(mainMenuTemplate);
+
+    // Insert the menu
+    Menu.setApplicationMenu(mainMenu);
+});
+
+/**
+ * Load the main window
+ * @returns {BrowserWindow|Electron.BrowserWindow}
+ */
+function createMainWindow()
+{
+    // Load the HTML for that window
+    mainWindow.loadURL(url.format({
+        pathname: path.join(__dirname, 'mainWindow.html'),
+        protocol: "file:",
+        slashes: true
+    }));
+
+    // Start off checking for our categories
+    categories = category.getAll();
+
+    // First, grab all budget items that have already been created
+    lineItems = store.get('lineItems');
+
+    // Send our data along to the view
+    mainWindow.initialList = lineItems;
+    mainWindow.categories = categories;
+
+    // Quit app when closed
+    mainWindow.on('closed', function(){
+        app.quit();
+    });
 }
+
+/**
+ * Build out the new Add Item window
+ */
+function createAddWindow()
+{
+    // Load html file into the window
+    mainWindow.loadURL(url.format({
+        pathname: path.join(__dirname, 'addWindow.html'),
+        protocol: "file:",
+        slashes: true
+    }));
+
+    mainWindow.categories = categories;
+}
+
+/**
+ * Listen for when an item is added to our list
+ */
+ipcMain.on('item:add', function(event, item)
+{
+    var newId = uuidv4();
+    item.id = newId;
+
+    // Store it before you send it on
+    store.set("lineItems."+newId, item);
+
+    // okay now you can send it
+    mainWindow.webContents.send('item:add', item);
+    createMainWindow();
+});
+
+/**
+ * Listen for when an item is removed from our list
+ */
+ipcMain.on('item:remove', function(event, item)
+{
+    // Remove from storage
+    store.delete("lineItems."+item);
+});
+
+ipcMain.on("window:addNewItem", function(){
+    createAddWindow();
+})
 
 /**
  * Allow dev tools on any view but production
@@ -184,71 +182,9 @@ if (process.env.NODE_ENV !== 'production'){
                 click(item, focusedWindow){
                     focusedWindow.toggleDevTools();
                 }
-            },
-            {
-                // Already defined role
-                role: 'reload'
             }
         ]
     });
 }
 
-/**
- * Test fill the database
- * TODO: Remove when app is complete
- */
-function setTemporaryDatabase()
-{
-    var newID = uuidv4();
-    var newObject= {
-        "id": newID,
-        "category": "Giving",
-        "lineItem": {
-            "name": "Tithe",
-            "amount": 10,
-            "date": "04/11/2017",
-            "recurring": "weekly"
-        }
-    };
 
-    var newID2 = uuidv4();
-    var newObject2 = {
-        "id": newID2,
-        "category": "Giving",
-        "lineItem": {
-            "name": "Offerings",
-            "amount": 10,
-            "date": "04/15/2017",
-            "recurring": "weekly"
-        }
-    };
-
-    var newID3 = uuidv4();
-    var newObject3 = {
-        "id": newID3,
-        "category": "Debt",
-        "lineItem": {
-            "name": "Car Payment",
-            "amount": 350,
-            "date": "04/19/2017",
-            "recurring": "monthly"
-        }
-    };
-
-    var newID4 = uuidv4();
-    var newObject4 = {
-        "id": newID4,
-        "category": "Income",
-        "lineItem": {
-            "name": "Paycheck",
-            "amount": 300,
-            "date": "04/19/2017",
-            "recurring": "weekly"
-        }
-    };
-
-    store.set(newID, newObject);
-    store.set(newID2, newObject2);
-    store.set(newID3, newObject3);
-    store.set(newID4, newObject4);
-}

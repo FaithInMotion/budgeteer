@@ -16,9 +16,8 @@
     </style>
 </head>
 <!-- Page rendering -->
-<body>
+<body style="-webkit-app-region: drag">
     <!-- Seen page -->
-
     <!-- Top Navbar -->
     <nav class="navbar navbar-dark bg-dark navbar-static-top">
         <div class="container">
@@ -43,28 +42,30 @@
         const Store = require('electron-store');
         const store = new Store();
 
+        const Category = require('./models/category');
+        const category = new Category();
+
         // Variables
         let currentWindow = electron.remote.getCurrentWindow();
         let initialList = currentWindow.initialList;
 
         // Make sure we have items to show: show error if not
-        if (Object.keys(initialList).length === 0 && initialList.constructor === Object)
+        if (initialList === undefined
+            || (Object.keys(initialList).length === 0 && initialList.constructor === Object)
+        )
         {
             showNoItemsError();
         }
-        // But sense we do have items, parse them out
+        // But since we do have items, parse them out
         else
         {
-            console.log(initialList);
-
-            // Remove the empty list error
-            removeNoItemsError();
-
             // Set the initial list
             for(var i in initialList)
             {
                 // Determine which ul to add to
-                var correctUL = determineCorrectUl(initialList[i].category);
+                var correctUL = determineCorrectUl(
+                    category.getNameById(initialList[i].categoryId)
+                );
 
                 // Add the item to that ul
                 addItemToList(initialList[i], correctUL);
@@ -77,13 +78,14 @@
             removeNoItemsError();
 
             // Determine which ul to add to
-            var correctUL = determineCorrectUl(item.category);
+            var correctUL = determineCorrectUl(
+                category.getNameById(item.categoryId)
+            );
 
             addItemToList(item, correctUL);
         });
 
         // Listen for a request to remove all items from list
-        // TODO: Is this still a thing?
         ipcRenderer.on('item:clear', function(){
             var mainDiv = document.getElementById('budgetView');
             mainDiv.innerHTML = '';
@@ -179,7 +181,7 @@
             var mainDiv = document.getElementById('budgetView');
 
             // Make sure Income comes first
-            if (thing.category === "Income")
+            if (category.getNameById(thing.categoryId) === "Income")
             {
                 mainDiv.insertBefore(correctUl, mainDiv.firstChild);
             }
