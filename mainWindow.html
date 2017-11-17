@@ -45,6 +45,8 @@
         const Category = require('./models/category');
         const category = new Category();
 
+        const moment = require('moment');
+
         // Variables
         let currentWindow = electron.remote.getCurrentWindow();
         let initialList = currentWindow.initialList;
@@ -60,10 +62,10 @@
         else
         {
             // Set the initial list
-            for(var i in initialList)
+            for(let i in initialList)
             {
                 // Determine which ul to add to
-                var correctUL = determineCorrectUl(
+                let correctUL = determineCorrectUl(
                     category.getNameById(initialList[i].categoryId)
                 );
 
@@ -78,7 +80,7 @@
             removeNoItemsError();
 
             // Determine which ul to add to
-            var correctUL = determineCorrectUl(
+            let correctUL = determineCorrectUl(
                 category.getNameById(item.categoryId)
             );
 
@@ -87,7 +89,7 @@
 
         // Listen for a request to remove all items from list
         ipcRenderer.on('item:clear', function(){
-            var mainDiv = document.getElementById('budgetView');
+            let mainDiv = document.getElementById('budgetView');
             mainDiv.innerHTML = '';
 
             store.clear();
@@ -103,7 +105,10 @@
         function removeItem(itemId)
         {
             // Grab the item
-            var item = document.getElementById(itemId);
+            let item = document.getElementById(itemId);
+
+            // Grab it's parent
+            let itemCategory = item.parentNode;
 
             // Remove from storage
             ipcRenderer.send('item:remove', itemId);
@@ -111,11 +116,17 @@
             // Remove from view
             item.remove();
 
+            // Remove category header if empty (which means the only thing in it is the header, 1 child)
+            if (itemCategory.children.length == 1)
+            {
+
+                itemCategory.parentNode.removeChild(document.getElementById(itemCategory.id));
+            }
+
             // Show the empty list error if we have gotten that far
-            var mainDiv = document.getElementById('budgetView');
+            let mainDiv = document.getElementById('budgetView');
             if (mainDiv.children.length == 0)
             {
-                ul.className = '';
                 showNoItemsError();
             }
         }
@@ -128,33 +139,33 @@
         function addItemToList(thing, correctUl)
         {
             // Create a new li element
-            var li = document.createElement('li');
+            let li = document.createElement('li');
 
             // Style it
             li.className = 'list-group-item';
             li.id = thing.id;
 
             // Create our grid view
-            var container = document.createElement('div');
+            let container = document.createElement('div');
             container.className = 'container';
 
-            var row = document.createElement('div');
+            let row = document.createElement('div');
             row.className = 'row';
 
             // Grab the pieces
-            var name = document.createElement('div');
+            let name = document.createElement('div');
             name.innerHTML = thing.lineItem.name;
 
-            var amount = document.createElement('div');
-            amount.innerHTML = thing.lineItem.amount;
+            let amount = document.createElement('div');
+            amount.innerHTML = "$"+parseFloat(thing.lineItem.amount);
 
-            var date = document.createElement('div');
-            date.innerHTML = thing.lineItem.date;
+            let date = document.createElement('div');
+            date.innerHTML = moment(thing.lineItem.date).format('MMM DD, YYYY');
 
-            var recurring = document.createElement('div');
+            let recurring = document.createElement('div');
             recurring.innerHTML = thing.lineItem.recurring;
 
-            var remove = document.createElement('div');
+            let remove = document.createElement('div');
             remove.innerHTML = "<button class='btn btn-sm btn-outline-danger' onclick='removeItem(\"" + thing.id + "\")'>Delete</button>";
 
             name.className = "col-sm";
@@ -178,7 +189,7 @@
             correctUl.appendChild(li);
 
             // Append this entire beast to the overall div
-            var mainDiv = document.getElementById('budgetView');
+            let mainDiv = document.getElementById('budgetView');
 
             // Make sure Income comes first
             if (category.getNameById(thing.categoryId) === "Income")
@@ -197,7 +208,7 @@
         function showNoItemsError()
         {
             // create the ul
-            var ul = document.createElement('ul');
+            let ul = document.createElement('ul');
 
             // Set styles accordingly
             ul.className = 'list-group breathing-room';
@@ -206,7 +217,7 @@
             ul.id = 'nothingToShow';
 
             // Create and fill a new li element
-            var li = document.createElement('li');
+            let li = document.createElement('li');
             li.innerHTML = 'Create your first budget item <a href="#" onclick="openAddNewItemWindow()">here</a>!';
             li.id = 'nothingFoundMessage';
 
@@ -217,7 +228,7 @@
             ul.appendChild(li);
 
             // Append this entire beast to the overall div
-            var mainDiv = document.getElementById('budgetView');
+            let mainDiv = document.getElementById('budgetView');
             mainDiv.appendChild(ul);
         }
 
@@ -227,7 +238,7 @@
         function removeNoItemsError()
         {
             // Get the correct ul
-            var ul = document.getElementById("nothingToShow");
+            let ul = document.getElementById("nothingToShow");
 
             // If found, remove it
             if (ul !== null)
@@ -236,7 +247,7 @@
                 ul.className = '';
 
                 // Remove any HTML in the ul element
-                var list = document.getElementById('nothingFoundMessage');
+                let list = document.getElementById('nothingFoundMessage');
 
                 if (list !== null)
                 {
@@ -251,15 +262,15 @@
         function determineCorrectUl(category)
         {
             // Search for the element
-            var correctUl = document.getElementById(category);
+            let correctUl = document.getElementById(category);
 
             if (correctUl === null)
             {
-                var correctUl = document.createElement('ul');
+                let correctUl = document.createElement('ul');
                 correctUl.id = category;
                 correctUl.className = "list-group breathing-room";
 
-                var headerLi = document.createElement('li');
+                let headerLi = document.createElement('li');
                 headerLi.innerHTML = category;
 
                 // determine class color
