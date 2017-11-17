@@ -141,7 +141,7 @@ function createAddWindow()
  */
 ipcMain.on('item:add', function(event, item)
 {
-    var newId = uuidv4();
+    let newId = uuidv4();
     item.id = newId;
 
     // Store it before you send it on
