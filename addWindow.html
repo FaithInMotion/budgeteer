@@ -3,6 +3,7 @@
 <head>
     <!-- Styles -->
     <link rel="stylesheet" href="node_modules/bootstrap/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="node_modules/flatpickr/dist/flatpickr.css">
 
     <title>Add Budget Line Item</title>
 
@@ -50,8 +51,8 @@
             </div>
 
             <div class="form-group">
-                <label class="col-form-label" for="date">Date</label>
-                <input type="date" class="form-control" id="date">
+                <label class="col-form-label" for="dueDate">Date</label>
+                <input type="text" placeholder="Select Date..." class="form-control" id="dueDate">
             </div>
 
             <div class="form-group">
@@ -74,6 +75,10 @@
     const electron = require('electron');
     const {ipcRenderer} = electron;
     const moment = require('moment');
+
+    // Set up special fields
+    const flatpickr = require("flatpickr");
+    flatpickr("#dueDate");
 
     // Listen for form submit
     const form = document.querySelector('form');
@@ -111,7 +116,7 @@
         let lineItem = {};
         lineItem.name = document.querySelector('#name').value;
         lineItem.amount = document.querySelector('#amount').value;
-        lineItem.date = moment(document.querySelector('#date').value).format('MM-DD-YYYY');
+        lineItem.date = moment(document.querySelector('#dueDate').value).format('MM-DD-YYYY');
         lineItem.recurring = document.querySelector('#recurring').value;
 
         item.lineItem = lineItem;
