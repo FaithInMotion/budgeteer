@@ -10,8 +10,11 @@
 
     <style>
         .breathing-room{
-            margin-top: 10px;
             margin-bottom: 10px;
+        }
+        .list-group-item {
+            border-radius: 0 !important;
+            color: #000000;
         }
     </style>
 </head>
@@ -19,7 +22,7 @@
 <body style="-webkit-app-region: drag">
     <!-- Seen page -->
     <!-- Top Navbar -->
-    <nav class="navbar navbar-dark bg-dark navbar-static-top">
+    <nav class="navbar navbar-dark bg-dark navbar-static-top" style="margin-bottom: 15px;" >
         <div class="container">
             <div class="navbar-header">
                 <span class="navbar-brand">
@@ -109,6 +112,7 @@
 
             // Grab it's parent
             let itemCategory = item.parentNode;
+            let itemCard = itemCategory.parentNode;
 
             // Remove from storage
             ipcRenderer.send('item:remove', itemId);
@@ -116,11 +120,11 @@
             // Remove from view
             item.remove();
 
-            // Remove category header if empty (which means the only thing in it is the header, 1 child)
-            if (itemCategory.children.length == 1)
+            // Remove category header if empty
+            if (itemCategory.children.length == 0)
             {
-
-                itemCategory.parentNode.removeChild(document.getElementById(itemCategory.id));
+                // Because of card structure, we actually need to go up 2 parents
+                itemCard.remove();
             }
 
             // Show the empty list error if we have gotten that far
@@ -133,10 +137,10 @@
 
         /**
          * Act on an Add Item event
-         * @param item
+         * @param thing
          * @param correctUl
          */
-        function addItemToList(thing, correctUl)
+        function addItemToList(thing, correctUlPanel)
         {
             // Create a new li element
             let li = document.createElement('li');
@@ -147,7 +151,7 @@
 
             // Create our grid view
             let container = document.createElement('div');
-            container.className = 'container';
+            container.className = 'liContainer';
 
             let row = document.createElement('div');
             row.className = 'row';
@@ -186,20 +190,8 @@
             li.appendChild(container);
 
             // Append the new li to the ul element
-            correctUl.appendChild(li);
-
-            // Append this entire beast to the overall div
-            let mainDiv = document.getElementById('budgetView');
-
-            // Make sure Income comes first
-            if (category.getNameById(thing.categoryId) === "Income")
-            {
-                mainDiv.insertBefore(correctUl, mainDiv.firstChild);
-            }
-            else
-            {
-                mainDiv.appendChild(correctUl);
-            }
+            let currentUl = correctUlPanel.getElementsByTagName('ul');
+            currentUl[0].appendChild(li);
         }
 
         /**
@@ -217,19 +209,15 @@
             ul.id = 'nothingToShow';
 
             // Create and fill a new li element
-            let li = document.createElement('li');
-            li.innerHTML = 'Create your first budget item <a href="#" onclick="openAddNewItemWindow()">here</a>!';
-            li.id = 'nothingFoundMessage';
+            let div = document.createElement('div');
+            div.innerHTML = 'Create your first budget item <a href="#" onclick="openAddNewItemWindow()">here</a>!';
+            div.id = 'nothingFoundMessage';
 
             // Style it accordingly
-            li.className = 'list-group-item list-group-item-warning';
-
-            // Append it to our ul element
-            ul.appendChild(li);
+            div.className = 'alert alert-block alert-info';
 
             // Append this entire beast to the overall div
-            let mainDiv = document.getElementById('budgetView');
-            mainDiv.appendChild(ul);
+            addCardToPage(div);
         }
 
         /**
@@ -237,23 +225,9 @@
          */
         function removeNoItemsError()
         {
-            // Get the correct ul
-            let ul = document.getElementById("nothingToShow");
-
-            // If found, remove it
-            if (ul !== null)
-            {
-                // Remove the styling
-                ul.className = '';
-
-                // Remove any HTML in the ul element
-                let list = document.getElementById('nothingFoundMessage');
-
-                if (list !== null)
-                {
-                    ul.removeChild(list);
-                }
-            }
+            // Get the correct div
+            let div = document.getElementById("nothingToShow");
+            div.remove();
         }
 
         /**
@@ -262,32 +236,41 @@
         function determineCorrectUl(category)
         {
             // Search for the element
-            let correctUl = document.getElementById(category);
+            let correctUlPanel = document.getElementById(category);
 
-            if (correctUl === null)
+            if (correctUlPanel === null)
             {
-                let correctUl = document.createElement('ul');
-                correctUl.id = category;
-                correctUl.className = "list-group breathing-room";
+                // First build the panel
+                correctUlPanel = document.createElement('div');
+                correctUlPanel.id = category;
 
-                let headerLi = document.createElement('li');
-                headerLi.innerHTML = category;
+                let panelHeading = document.createElement('div');
+                panelHeading.className = 'card-header';
+                panelHeading.innerHTML = category;
+
+                let correctUl = document.createElement('ul');
+                correctUl.className = "list-group text-green border-top-0";
 
                 // determine class color
                 switch (category)
                 {
                     case "Income":
-                        headerLi.className = 'list-group-item list-group-item-success';
+                        correctUlPanel.className = 'text-white bg-success rounded breathing-room';
                         break;
                     default:
-                        headerLi.className = 'list-group-item list-group-item-primary';
+                        correctUlPanel.className = 'text-white bg-info rounded breathing-room';
                 }
 
-                correctUl.appendChild(headerLi);
+                // Filll and add the panel to the page
+                correctUlPanel.appendChild(panelHeading);
+                correctUlPanel.appendChild(correctUl);
+
+                // Because it's new, add it to the view
+                addCardToPage(correctUlPanel);
             }
 
             // return our found one instead
-            return correctUl;
+            return correctUlPanel;
         }
 
         /**
@@ -296,6 +279,21 @@
         function openAddNewItemWindow()
         {
             ipcRenderer.send("window:addNewItem");
+        }
+
+        function addCardToPage(element)
+        {
+            let mainDiv = document.getElementById('budgetView');
+
+            // Make sure Income comes first
+            if (element.id === "Income")
+            {
+                mainDiv.insertBefore(element, mainDiv.firstChild);
+            }
+            else
+            {
+                mainDiv.appendChild(element);
+            }
         }
     </script>
 </body>
