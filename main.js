@@ -84,10 +84,10 @@ const mainMenuTemplate = [
 app.on('ready', function ()
 {
     // Create a new Main window
+    const {width, height} = electron.screen.getPrimaryDisplay().workAreaSize;
     mainWindow = new BrowserWindow({
-        frame: false,
-        width: 800,
-        height: 600,
+        width: width,
+        height: height
     });
 
     createMainWindow();
