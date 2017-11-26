@@ -125,7 +125,7 @@
         let lineItem = {};
         lineItem.name = document.querySelector('#name').value;
         lineItem.amount = document.querySelector('#amount').value;
-        lineItem.date = moment(document.querySelector('#dueDate').value).format('MM-DD-YYYY');
+        lineItem.date = moment(document.querySelector('#dueDate').value).toISOString();
         lineItem.recurring = document.querySelector('#recurring').value;
 
         item.lineItem = lineItem;

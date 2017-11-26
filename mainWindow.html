@@ -14,7 +14,8 @@
         }
         .list-group-item {
             border-radius: 0 !important;
-            color: #000000;
+            color: #ffffff;
+            background: transparent;
         }
     </style>
 </head>
@@ -47,6 +48,11 @@
 
         const Category = require('./models/category');
         const category = new Category();
+
+        const LineItem = require('./models/lineitem');
+        const lineitem = new LineItem();
+
+        const moment = require('moment');
 
         // Variables
         let currentWindow = electron.remote.getCurrentWindow();
@@ -148,20 +154,38 @@
             amount.innerHTML = "$"+parseFloat(thing.lineItem.amount);
 
             let date = document.createElement('div');
-            date.innerHTML = thing.lineItem.date;
+            date.setAttribute('data-isodate', thing.lineItem.date);
+            date.innerHTML = moment(thing.lineItem.date).format('MMM Do, YYYY');
 
             let recurring = document.createElement('div');
             recurring.innerHTML = thing.lineItem.recurring;
 
-            let buttons = document.createElement('div');
-            buttons.innerHTML = "<button class='btn btn-sm btn-outline-danger' onclick='removeItem(\"" + thing.id + "\")'>Delete</button>" +
-                "<button class='btn btn-sm btn-outline-success' onclick='markItemPaid(\"" + thing.id + "\")'>Mark Paid</button>";
+            console.log(thing);
 
-            name.className = "col-sm";
-            amount.className = "col-sm";
-            date.className = "col-sm";
-            recurring.className = "col-sm";
-            buttons.className = "col-sm";
+            let buttons;
+
+            // Income category has it's own unique set of rules
+            // TODO: If we allow editable categories, this is going to have to be taken into account
+            // TODO: Idea: if the created category is income based, then have a flag on the category,
+            // TODO: and check for that flag here
+            if (thing.categoryId === "1")
+            {
+                buttons = document.createElement('div');
+                buttons.innerHTML = "<button type='button' class='btn btn-sm btn-danger' onclick='removeItem(\"" + thing.id + "\")'>Delete</button>";
+            }
+            // Everything else gets a paid button as well
+            else
+            {
+                buttons = document.createElement('div');
+                buttons.innerHTML = "<button type='button' class='btn btn-sm btn-danger' onclick='removeItem(\"" + thing.id + "\")'>Delete</button>" +
+                    "<button type='button' class='btn btn-sm btn-dark' onclick='markItemPaid(\"" + thing.id + "\")'>Mark Paid</button>";
+            }
+
+            name.className = "col-sm rowName";
+            amount.className = "col-sm rowAmount";
+            date.className = "col-sm rowDate";
+            recurring.className = "col-sm rowRecurring";
+            buttons.className = "col-sm rowButtons btn-group";
 
             // Build out the rows
             row.appendChild(name);
@@ -296,8 +320,67 @@
             // Grab the item
             let item = document.getElementById(itemId);
 
+            // Grab the period
+            let periodObject = item.getElementsByClassName('rowRecurring');
+            let periodName = periodObject[0].innerHTML;
+
             // Grab the date
-            console.log(item);
+            let dateObject = item.getElementsByClassName('rowDate');
+            let date = dateObject[0].dataset.isodate;
+
+            // Set up our new date so we can show it
+            let newDate;
+
+            // grab the item to be manipulated
+            let originalItem = lineitem.getById(itemId);
+
+            // Manipulate the date according to period
+            switch(periodName)
+            {
+                case "Weekly":
+                    // create the new date
+                    newDate = moment(date).add(1, 'week').toISOString();
+
+                    // change the old date to the new one
+                    originalItem.lineItem.date = newDate;
+
+                    // save it
+                    lineitem.set(itemId, originalItem);
+                    break;
+                case "Monthly":
+                    // create the new date
+                    newDate = moment(date).add(1, 'month').toISOString();
+
+                    // change the old date to the new one
+                    originalItem.lineItem.date = newDate;
+
+                    // save it
+                    lineitem.set(itemId, originalItem);
+                    break;
+                case "Yearly":
+                    // create the new date
+                    newDate = moment(date).add(1, 'year').toISOString();
+
+                    // change the old date to the new one
+                    originalItem.lineItem.date = newDate;
+
+                    // save it
+                    lineitem.set(itemId, originalItem);
+                    break;
+                // This case is special - it should just remove the div.
+                case "One Time":
+                    removeItem(item.id);
+                    return;
+            }
+
+            // Add the new item
+            let dateParentObject =dateObject[0].parentNode.parentNode.parentNode.parentNode.parentNode;
+
+            let correctUl = determineCorrectUl(dateParentObject.id);
+            addItemToList(originalItem, correctUl);
+
+            // Remove the old item
+            item.remove();
         }
     </script>
 </body>
