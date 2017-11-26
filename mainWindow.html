@@ -48,8 +48,6 @@
         const Category = require('./models/category');
         const category = new Category();
 
-        const moment = require('moment');
-
         // Variables
         let currentWindow = electron.remote.getCurrentWindow();
         let initialList = currentWindow.initialList;
@@ -77,19 +75,6 @@
             }
         }
 
-        // Listen for items being added to our list
-        ipcRenderer.on('item:add', function(event, item){
-            // Remove the empty list error
-            removeNoItemsError();
-
-            // Determine which ul to add to
-            let correctUL = determineCorrectUl(
-                category.getNameById(item.categoryId)
-            );
-
-            addItemToList(item, correctUL);
-        });
-
         // Listen for a request to remove all items from list
         ipcRenderer.on('item:clear', function(){
             let mainDiv = document.getElementById('budgetView');
@@ -102,7 +87,6 @@
 
         /**
          * Act on a Remove Item event
-         * TODO: Make sure this removes categories that are now empty
          * @param event
          */
         function removeItem(itemId)
@@ -164,7 +148,7 @@
             amount.innerHTML = "$"+parseFloat(thing.lineItem.amount);
 
             let date = document.createElement('div');
-            date.innerHTML = moment(thing.lineItem.date).format('MMM DD, YYYY');
+            date.innerHTML = thing.lineItem.date;
 
             let recurring = document.createElement('div');
             recurring.innerHTML = thing.lineItem.recurring;
@@ -199,25 +183,25 @@
          */
         function showNoItemsError()
         {
-            // create the ul
-            let ul = document.createElement('ul');
-
-            // Set styles accordingly
-            ul.className = 'list-group breathing-room';
-
-            // Give it an id
-            ul.id = 'nothingToShow';
-
             // Create and fill a new li element
-            let div = document.createElement('div');
-            div.innerHTML = 'Create your first budget item <a href="#" onclick="openAddNewItemWindow()">here</a>!';
-            div.id = 'nothingFoundMessage';
+            let cardDiv = document.createElement('div');
+            cardDiv.id = 'nothingFoundMessage';
+            cardDiv.className = 'card text-white bg-info';
 
-            // Style it accordingly
-            div.className = 'alert alert-block alert-info';
+            let cardHeaderDiv = document.createElement('div');
+            cardHeaderDiv.className = 'card-header';
+            cardHeaderDiv.innerHTML = "Let's get started!";
+
+            let cardBodyDiv = document.createElement('div');
+            cardBodyDiv.className = 'card-body';
+            cardBodyDiv.innerHTML = 'Create your first budget item <a href="#" class="text-dark" onclick="openAddNewItemWindow()">here</a>!';
+
+            // Build the div
+            cardDiv.appendChild(cardHeaderDiv);
+            cardDiv.appendChild(cardBodyDiv);
 
             // Append this entire beast to the overall div
-            addCardToPage(div);
+            addCardToPage(cardDiv);
         }
 
         /**
@@ -227,6 +211,8 @@
         {
             // Get the correct div
             let div = document.getElementById("nothingToShow");
+
+            // Only try to remove it if it exists
             div.remove();
         }
 

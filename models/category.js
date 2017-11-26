@@ -10,6 +10,8 @@ const electron = require('electron');
 const Store = require('electron-store');
 const store = new Store();
 
+const storeName = 'categories';
+
 /**
  * Create our class
  */
@@ -81,7 +83,7 @@ function setInitialCategories(resetCategories)
     else
     {
         // First, check that categories exists - it won't on first app run
-        categories = store.get('categories');
+        categories = store.get(storeName);
 
         // Did we find anything?
         if (categories === undefined
@@ -92,7 +94,7 @@ function setInitialCategories(resetCategories)
             categories = getInitialCategories();
 
             // Save this to our database
-            store.set('categories', categories);
+            store.set(storeName, categories);
         }
     }
 

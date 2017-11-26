@@ -17,6 +17,9 @@ const store = new Store();
 const Category = require('./models/category');
 const category = new Category();
 
+const LineItem = require('./models/lineitem');
+const lineitem = new LineItem();
+
 /**
  * Electron setup
  */
@@ -109,7 +112,7 @@ function createMainWindow()
     categories = category.getAll();
 
     // First, grab all budget items that have already been created
-    lineItems = store.get('lineItems');
+    lineItems = lineitem.getAllLineItems();
 
     // Send our data along to the view
     mainWindow.initialList = lineItems;
@@ -145,10 +148,9 @@ ipcMain.on('item:add', function(event, item)
     item.id = newId;
 
     // Store it before you send it on
-    store.set("lineItems."+newId, item);
+    lineitem.set(newId, item);
 
-    // okay now you can send it
-    mainWindow.webContents.send('item:add', item);
+    // okay now you can go back to the main view
     createMainWindow();
 });
 
@@ -158,7 +160,7 @@ ipcMain.on('item:add', function(event, item)
 ipcMain.on('item:remove', function(event, item)
 {
     // Remove from storage
-    store.delete("lineItems."+item);
+    lineitem.delete(item);
 });
 
 ipcMain.on("window:addNewItem", function(){
