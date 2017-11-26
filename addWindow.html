@@ -57,11 +57,7 @@
 
             <div class="form-group">
                 <label class="col-form-label" for="recurring">Recurring</label>
-                <select id="recurring" class="form-control">
-                    <option selected>Weekly</option>
-                    <option>Monthly</option>
-                    <option>Yearly</option>
-                </select>
+                <select id="recurring" class="form-control"></select>
             </div>
 
             <!-- Submit button -->
@@ -87,6 +83,7 @@
     // Passed elements
     let currentWindow = electron.remote.getCurrentWindow();
     let categories = currentWindow.categories;
+    let periods = currentWindow.periods;
 
     // Dynamically add categories to selection
     let categorySelect = document.getElementById('category');
@@ -98,6 +95,18 @@
         option.text = categoryOption;
         option.id = i;
         categorySelect.add(option);
+    }
+
+    // Dynamically add periods to selection
+    let recurringSelect = document.getElementById('recurring');
+
+    for (let i in periods)
+    {
+        let recurringOption = periods[i];
+        let option = document.createElement('option');
+        option.text = recurringOption;
+        option.id = i;
+        recurringSelect.add(option);
     }
 
     /**

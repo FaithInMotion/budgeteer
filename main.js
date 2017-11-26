@@ -20,6 +20,9 @@ const category = new Category();
 const LineItem = require('./models/lineitem');
 const lineitem = new LineItem();
 
+const Period = require('./models/period');
+const period = new Period();
+
 /**
  * Electron setup
  */
@@ -35,6 +38,7 @@ let mainWindow;
 //=== Main variables shared between pages ===
 let categories;
 let lineItems;
+let periods;
 
 /**
  * Create the Menu template
@@ -111,12 +115,16 @@ function createMainWindow()
     // Start off checking for our categories
     categories = category.getAll();
 
-    // First, grab all budget items that have already been created
+    // Then go grab all of our payment period options
+    periods = period.getAll();
+
+    // Now, grab all budget items that have already been created
     lineItems = lineitem.getAllLineItems();
 
     // Send our data along to the view
     mainWindow.initialList = lineItems;
     mainWindow.categories = categories;
+    mainWindow.periods = periods;
 
     // Quit app when closed
     mainWindow.on('closed', function(){
@@ -137,6 +145,7 @@ function createAddWindow()
     }));
 
     mainWindow.categories = categories;
+    mainWindow.periods = periods;
 }
 
 /**
