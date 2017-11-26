@@ -46,12 +46,28 @@ class Period
  */
 function getInitialPeriods()
 {
-    return {
-        "1": "Weekly",
-        "2": "Monthly",
-        "3": "Yearly",
-        "4": "One Time"
-    };
+    // Try to retrieve from the database
+    let periods = store.get(storeName);
+
+    // if we couldn't, then this is the first time the app has been opened
+    if (periods === undefined
+        || (Object.keys(periods).length === 0 && periods.constructor === Object)
+    )
+    {
+        // Fill the object and save it to our database
+        periods = {
+            "1": "Weekly",
+            "2": "Monthly",
+            "3": "Yearly",
+            "4": "One Time"
+        };
+
+        // Save this to our database
+        store.set(storeName, periods);
+    }
+
+    // Now just return the list
+    return periods;
 }
 
 /**
