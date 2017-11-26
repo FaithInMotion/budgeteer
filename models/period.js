@@ -33,11 +33,6 @@ class Period
     {
         return this.data;
     }
-
-    getPeriodById(id)
-    {
-        return this.data[id];
-    }
 }
 
 /**

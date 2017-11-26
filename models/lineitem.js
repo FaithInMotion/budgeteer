@@ -49,6 +49,11 @@ class LineItem
     {
     	store.delete(storeName+"."+id);
     }
+
+    getById(id)
+    {
+        return store.get(storeName+"."+id);
+    }
 }
 
 /**
