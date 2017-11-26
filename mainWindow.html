@@ -153,21 +153,22 @@
             let recurring = document.createElement('div');
             recurring.innerHTML = thing.lineItem.recurring;
 
-            let remove = document.createElement('div');
-            remove.innerHTML = "<button class='btn btn-sm btn-outline-danger' onclick='removeItem(\"" + thing.id + "\")'>Delete</button>";
+            let buttons = document.createElement('div');
+            buttons.innerHTML = "<button class='btn btn-sm btn-outline-danger' onclick='removeItem(\"" + thing.id + "\")'>Delete</button>" +
+                "<button class='btn btn-sm btn-outline-success' onclick='markItemPaid(\"" + thing.id + "\")'>Mark Paid</button>";
 
             name.className = "col-sm";
             amount.className = "col-sm";
             date.className = "col-sm";
             recurring.className = "col-sm";
-            remove.className = "col-sm";
+            buttons.className = "col-sm";
 
             // Build out the rows
             row.appendChild(name);
             row.appendChild(amount);
             row.appendChild(date);
             row.appendChild(recurring);
-            row.appendChild(remove);
+            row.appendChild(buttons);
 
             // Build everything into the li
             container.appendChild(row);
@@ -267,6 +268,10 @@
             ipcRenderer.send("window:addNewItem");
         }
 
+        /**
+         * Adds a card to the page
+         * @param element
+         */
         function addCardToPage(element)
         {
             let mainDiv = document.getElementById('budgetView');
@@ -280,6 +285,19 @@
             {
                 mainDiv.appendChild(element);
             }
+        }
+
+        /**
+         * Marks an item as paid and increments to the next due date
+         * @param itemId
+         */
+        function markItemPaid(itemId)
+        {
+            // Grab the item
+            let item = document.getElementById(itemId);
+
+            // Grab the date
+            console.log(item);
         }
     </script>
 </body>
