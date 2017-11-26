@@ -96,6 +96,12 @@ function setInitialCategories(resetCategories)
             // Save this to our database
             store.set(storeName, categories);
         }
+        // We did, so let's use what we found instead
+        // TODO: CRUD for this file
+        else
+        {
+
+        }
     }
 
     // Return whatever we have
