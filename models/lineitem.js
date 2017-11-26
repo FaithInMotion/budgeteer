@@ -5,7 +5,6 @@ const electron = require('electron');
 
 /**
  * Database setup
- * TODO: Look at changing this to a database like Dexie or NeDB
  */
 const Store = require('electron-store');
 const store = new Store();
@@ -54,6 +53,6 @@ class LineItem
 
 /**
  * Expose the class
- * @type {Category}
+ * @type {LineItem}
  */
 module.exports = LineItem;
